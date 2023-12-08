@@ -12,6 +12,7 @@ def parse_args():
                         help='target anonymous github link eg., https://anonymous.4open.science/r/840c8c57-3c32-451e-bf12-0e20be300389/')
     parser.add_argument('--max-conns', type=int, default=128,
                         help='max connections number')
+    parser.add_argument("--proxy",type=str,default="none",help="proxy server")
     return parser.parse_args()
 
 def dict_parse(dic, pre=None):
@@ -26,10 +27,11 @@ def dict_parse(dic, pre=None):
     else:
         yield pre + [dic]
 
+proxies=None
 def req_url(dl_file, max_retry=5):
     url = dl_file[0]
     save_path = dl_file[1]
-    save_dir = '/'.join(save_path.split('/')[:-1])
+    save_dir = os.path.dirname(save_path)
     if not os.path.exists(save_dir) and save_dir:
         try:
             os.makedirs(save_dir)
@@ -41,7 +43,7 @@ def req_url(dl_file, max_retry=5):
     }
     for i in range(max_retry):
         try:
-            r = requests.get(url, headers=headers)
+            r = requests.get(url, headers=headers,proxies=proxies)
             with open(save_path, "wb") as f:
                 f.write(r.content)
             return
@@ -58,14 +60,20 @@ if __name__ == '__main__':
     url = args.url
     name = url.split('/')[-2]
     max_conns = args.max_conns
+    
+    if args.proxy:
+        if args.proxy.startswith("http"):
+            proxies={"https":"http://"+args.proxy}
+        else:
+            proxies={"https":args.proxy}
 
-    print("[*] cloning project:" + name)
+    print("[*] cloning project:" + name + "with proxy"+proxies)
     
     list_url = "https://anonymous.4open.science/api/repo/"+ name +"/files/"
     headers = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Safari/605.1.15"
     }
-    resp = requests.get(url=list_url, headers=headers)
+    resp = requests.get(url=list_url, headers=headers,proxies=proxies)
     file_list = resp.json()
 
     print("[*] downloading files:")
@@ -77,6 +85,8 @@ if __name__ == '__main__':
         file_path = os.path.join(*file[-len(file):-2]) # * operator to unpack the arguments out of a list
         save_path = os.path.join(args.dir, file_path)
         file_url = dl_url + file_path
+        if file_url.endswith(".pyc"):
+            continue
         files.append((file_url, save_path))
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_conns) as executor:
