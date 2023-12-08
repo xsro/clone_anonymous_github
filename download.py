@@ -67,7 +67,7 @@ if __name__ == '__main__':
         else:
             proxies={"https":args.proxy}
 
-    print("[*] cloning project:" + name + "with proxy"+proxies)
+    print("[*] cloning project:" + name + "with proxy",proxies)
     
     list_url = "https://anonymous.4open.science/api/repo/"+ name +"/files/"
     headers = {
