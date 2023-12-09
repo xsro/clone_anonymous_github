@@ -24,7 +24,7 @@ def parse_args():
                         help='max connections number')
     parser.add_argument("--proxy",type=str,help="proxy server")
     parser.add_argument("--skip",type=list,default=["pyc"],help="file suffix to skip download default is pyc")
-    return parser.parse_args()
+    return parser
 
 def dict_parse(dic, pre=None):
     pre = pre[:] if pre else []
@@ -71,15 +71,19 @@ def req_url(dl_file, max_retry=5):
 
 
 if __name__ == '__main__':
-    args = parse_args()
+    parser = parse_args()
+    args=parser.parse_args()
 
-    url = args.url
     name = args.name
     if name is None:
-        segs=url.split('/')
-        for i,s in enumerate(segs):
-            if s=="r":
-                name=segs[i+1]
+        if args.url is not None:
+            segs=args.url.split('/')
+            for i,s in enumerate(segs):
+                if s=="r":
+                    name=segs[i+1]
+        else:
+            parser.print_help()
+            exit(1)
     max_conns = args.max_conns
     if args.dir is None:
         output_dir=Path(name)
